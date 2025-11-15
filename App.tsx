@@ -139,7 +139,7 @@ const App: React.FC = () => {
     return (
         <div className="bg-brand-bg text-brand-text min-h-screen font-sans">
             <header className="p-4 flex justify-between items-center bg-brand-surface/80 backdrop-blur-sm border-b border-brand-primary/20 sticky top-0 z-10">
-                <h1 className="text-2xl font-serif font-bold text-brand-primary tracking-widest">The P.Q. Protocol</h1>
+                <h1 className="text-2xl font-serif font-bold text-brand-primary tracking-widest">P.Q. Betting Strategy</h1>
                  <div>
                     <Button onClick={handleAnalyzeEnvironment} variant="secondary" className="mr-4" disabled={!sessionData}>Analyze Environment</Button>
                     <Button onClick={() => setShowHelp(true)} variant="secondary">Help</Button>

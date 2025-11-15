@@ -146,7 +146,6 @@ const SessionView: React.FC<SessionViewProps> = ({ sessionData, setSessionData, 
     
     const { plan, spins, currentStageIndex, bankroll, freePlay, goal } = sessionData;
 
-    // FIX: Define `currentStage` from the plan and current index to resolve reference errors.
     const currentStage = plan[currentStageIndex];
 
     useEffect(() => {

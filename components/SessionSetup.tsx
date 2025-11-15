@@ -48,6 +48,7 @@ const Stepper: React.FC<{ currentStep: SetupStep }> = ({ currentStep }) => {
 const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
     const [step, setStep] = useState<SetupStep>('location');
     const [jurisdiction, setJurisdiction] = useState('');
+    const [preferredSlots, setPreferredSlots] = useState('high volatility, progressive jackpots');
     const [error, setError] = useState('');
     
     const [casinos, setCasinos] = useState<string[]>([]);
@@ -80,16 +81,21 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
         setIsFetchingCasinos(true);
         setError('');
         try {
-            const casinoList = await findCasinosInJurisdiction(jurisdiction);
+            const casinoList = await findCasinosInJurisdiction(jurisdiction, preferredSlots);
             setCasinos(casinoList);
             if (casinoList.length > 0) {
                 setSelectedCasino(casinoList[0]);
                 setIsManualEntry(false);
             } else {
+                setError('No casinos found for this jurisdiction. Please enter one manually.');
                 setIsManualEntry(true);
             }
-        } catch (e) {
-            setError('Could not fetch casinos. Please try again or enter manually.');
+        } catch (e: any) {
+            let errorMessage = 'Could not fetch casinos. Please try again or enter manually.';
+             if (e && e.message && (e.message.includes('RESOURCE_EXHAUSTED') || e.message.includes('429'))) {
+                errorMessage = 'AI service is busy (rate limit exceeded). Please wait a moment and try again, or enter the casino manually.';
+            }
+            setError(errorMessage);
             setCasinos([]);
             setIsManualEntry(true);
         } finally {
@@ -109,16 +115,26 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
      const handleManualSearch = async () => {
         if (!manualCasinoQuery) return;
         setIsSearching(true);
-        const results = await searchForCasino(jurisdiction, manualCasinoQuery);
-        if (results.length > 0) {
-            setCasinos(prev => [...new Set([...results, ...prev])]); // Add new results to list
-            setSelectedCasino(results[0]); // Select the first result
-            setIsManualEntry(false);
-        } else {
-            alert("No casinos found for that search. You can still enter it manually.");
-            setSelectedCasino(manualCasinoQuery); // Use the query as the manual entry
+        setError('');
+        try {
+            const results = await searchForCasino(jurisdiction, manualCasinoQuery);
+            if (results.length > 0) {
+                setCasinos(prev => [...new Set([...results, ...prev])].sort((a, b) => a.localeCompare(b)));
+                setSelectedCasino(results[0]);
+                setIsManualEntry(false);
+            } else {
+                alert("No casinos found for that search. You can still enter it manually.");
+                setSelectedCasino(manualCasinoQuery);
+            }
+        } catch (e: any) {
+            let errorMessage = 'Could not perform search. Please try again or enter manually.';
+            if (e && e.message && (e.message.includes('RESOURCE_EXHAUSTED') || e.message.includes('429'))) {
+                errorMessage = 'AI service is busy (rate limit exceeded). Please try again in a moment.';
+            }
+            setError(errorMessage);
+        } finally {
+            setIsSearching(false);
         }
-        setIsSearching(false);
     };
 
     const handleGeneratePlan = async () => {
@@ -162,6 +178,15 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
                                 placeholder="e.g., California"
                             />
                         </div>
+                         <div>
+                            <Input
+                                label="Preferred Slot Features (to prioritize casinos)"
+                                id="preferred-slots"
+                                value={preferredSlots}
+                                onChange={e => setPreferredSlots(e.target.value)}
+                                placeholder="e.g., high volatility, jackpots"
+                            />
+                        </div>
 
                         <Button onClick={handleConfirmLocation} variant="primary" disabled={isFetchingCasinos || !jurisdiction}>
                             {isFetchingCasinos ? <Spinner /> : "Confirm & Select Casino"}
@@ -172,6 +197,7 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
                  return (
                     <div className="animate-fade-in">
                         <h2 className="text-2xl font-serif font-bold text-brand-primary mb-4 text-center">Select Your Casino</h2>
+                        {error && <p className="text-brand-secondary text-center font-sans mb-4">{error}</p>}
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor="casino-select" className="block text-sm font-sans tracking-wider text-brand-subtle mb-2">

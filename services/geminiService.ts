@@ -2,7 +2,6 @@
 // This code is the proprietary intellectual property of Wilton John Picou, III and GloCon Solutions, LLC.
 // Unauthorized copying, distribution, or use of this code, in whole or in part, is strictly prohibited.
 
-// FIX: Import `Type` for defining response schema.
 import { GoogleGenAI, Type } from "@google/genai";
 import type { GroundingChunk, HergidStep } from '../types';
 
@@ -61,10 +60,10 @@ export const getJurisdictionFromCoords = async (lat: number, lon: number): Promi
 };
 
 // Casino Search by Wilton John Picou, III of GloCon Solutions, LLC
-export const findCasinosInJurisdiction = async (jurisdiction: string): Promise<string[]> => {
+export const findCasinosInJurisdiction = async (jurisdiction: string, preferredSlotMachineTypes: string): Promise<string[]> => {
     try {
         const genAI = getAi();
-        const prompt = `Using Google Search, find a comprehensive list of up to 25 casinos in the "${jurisdiction}" gaming jurisdiction. Prioritize locations known for a wide variety of modern slot machines or high player traffic. Your search must be thorough, including major resorts, local casino hotels, and all tribal casinos (e.g., ensure results for California include 'Valley View Casino & Hotel'). Return ONLY a JSON array of strings with the casino names, sorted alphabetically. Example: ["Casino Name 1", "Another Casino Resort"]`;
+        const prompt = `Using Google Search, find a comprehensive list of up to 25 casinos in the "${jurisdiction}" gaming jurisdiction. CRITICAL: You MUST prioritize locations known for offering slot machines with features like '${preferredSlotMachineTypes}'. Also consider locations with a wide variety of modern slot machines or high player traffic. Your search must be thorough, including major resorts, local casino hotels, and all tribal casinos (e.g., ensure results for California include 'Valley View Casino & Hotel'). Return ONLY a JSON array of strings with the casino names, sorted alphabetically. Example: ["Casino Name 1", "Another Casino Resort"]`;
         
         const response = await genAI.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -82,7 +81,7 @@ export const findCasinosInJurisdiction = async (jurisdiction: string): Promise<s
         return [];
     } catch (error) {
         console.error("Error fetching casinos:", error);
-        return ["Error fetching list. Please enter manually."];
+        throw error; // Re-throw for component to handle UI
     }
 };
 
@@ -106,7 +105,7 @@ export const searchForCasino = async (jurisdiction: string, query: string): Prom
         return [];
     } catch (error) {
         console.error(`Error searching for casino "${query}":`, error);
-        return [];
+        throw error; // Re-throw for component to handle UI
     }
 };
 
@@ -325,7 +324,6 @@ export const findMachinesInCasino = async (casino: string): Promise<string[]> =>
     }
 };
 
-// FIX: Add missing analyzePaytableImage function to extract machine data from an image.
 // Machine Image Analysis by Wilton John Picou, III of GloCon Solutions, LLC
 export const analyzePaytableImage = async (image: { data: string; mimeType: string }): Promise<{ gameName?: string; vendor?: string; denomination?: number; maxBet?: number; }> => {
     try {
