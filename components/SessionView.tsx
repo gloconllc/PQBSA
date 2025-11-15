@@ -93,8 +93,17 @@ const CompsOptimizer: React.FC<{ coinIn: number }> = ({ coinIn }) => {
 
     const handleGenerate = async () => {
         setIsLoading(true);
-        const result = await generateCompStrategy(coinIn, tier, points);
-        setStrategy(result);
+        try {
+            const result = await generateCompStrategy(coinIn, tier, points);
+            setStrategy(result);
+        } catch (e: any) {
+             let errorMessage = "Could not generate comp strategy. Please try again.";
+             const errorString = (typeof e === 'object' && e !== null) ? JSON.stringify(e) : String(e);
+             if (errorString.includes('RESOURCE_EXHAUSTED') || errorString.includes('429')) {
+                errorMessage = 'AI service is busy (rate limit exceeded). Please try again in a moment.';
+            }
+            setStrategy(errorMessage);
+        }
         setIsLoading(false);
     };
 
@@ -122,8 +131,17 @@ const AlgorithmInsights: React.FC<{ sessionData: SessionData, onGenerate: () => 
 
     const handleGenerate = async () => {
         setIsLoading(true);
-        const result = await onGenerate();
-        setInsight(result);
+        try {
+            const result = await onGenerate();
+            setInsight(result);
+        } catch (e: any) {
+            let errorMessage = "Could not generate insight. Please try again.";
+            const errorString = (typeof e === 'object' && e !== null) ? JSON.stringify(e) : String(e);
+             if (errorString.includes('RESOURCE_EXHAUSTED') || errorString.includes('429')) {
+                errorMessage = 'AI service is busy (rate limit exceeded). Please try again in a moment.';
+            }
+            setInsight(errorMessage);
+        }
         setIsLoading(false);
     };
 
@@ -208,8 +226,15 @@ const SessionView: React.FC<SessionViewProps> = ({ sessionData, setSessionData, 
                 newPlan[prev.currentStageIndex] = refinedStage;
                 return { ...prev, plan: newPlan };
             });
-        } catch (error) {
-            alert(error instanceof Error ? error.message : "Failed to refine stage.");
+        } catch (error: any) {
+            let errorMessage = "Failed to refine the plan for the specified machine.";
+            const errorString = (typeof error === 'object' && error !== null) ? JSON.stringify(error) : String(error);
+             if (errorString.includes('RESOURCE_EXHAUSTED') || errorString.includes('429')) {
+                errorMessage = 'AI service is busy (rate limit exceeded). Please try again in a moment.';
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            alert(errorMessage);
         }
         setIsRefining(false);
     };

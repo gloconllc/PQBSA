@@ -92,7 +92,8 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
             }
         } catch (e: any) {
             let errorMessage = 'Could not fetch casinos. Please try again or enter manually.';
-             if (e && e.message && (e.message.includes('RESOURCE_EXHAUSTED') || e.message.includes('429'))) {
+            const errorString = (typeof e === 'object' && e !== null) ? JSON.stringify(e) : String(e);
+            if (errorString.includes('RESOURCE_EXHAUSTED') || errorString.includes('429')) {
                 errorMessage = 'AI service is busy (rate limit exceeded). Please wait a moment and try again, or enter the casino manually.';
             }
             setError(errorMessage);
@@ -128,7 +129,8 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
             }
         } catch (e: any) {
             let errorMessage = 'Could not perform search. Please try again or enter manually.';
-            if (e && e.message && (e.message.includes('RESOURCE_EXHAUSTED') || e.message.includes('429'))) {
+            const errorString = (typeof e === 'object' && e !== null) ? JSON.stringify(e) : String(e);
+            if (errorString.includes('RESOURCE_EXHAUSTED') || errorString.includes('429')) {
                 errorMessage = 'AI service is busy (rate limit exceeded). Please try again in a moment.';
             }
             setError(errorMessage);
@@ -146,8 +148,17 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
             }
             const result = await generateAiSessionPlan(bankroll, goal, jurisdiction, selectedCasino, freePlay);
             onSetupComplete({ jurisdiction, bankroll, goal, freePlay, casino: selectedCasino, ...result });
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'An unknown error occurred.');
+        } catch (e: any) {
+            let errorMessage = 'An unknown error occurred while generating the plan.';
+            const errorString = (typeof e === 'object' && e !== null) ? JSON.stringify(e) : String(e);
+
+            if (errorString.includes('RESOURCE_EXHAUSTED') || errorString.includes('429')) {
+                errorMessage = 'AI service is busy (rate limit exceeded). Failed to generate plan. Please try again in a moment.';
+            } else if (e instanceof Error) {
+                errorMessage = e.message;
+            }
+
+            setError(errorMessage);
             setStep('bankroll');
         }
     };

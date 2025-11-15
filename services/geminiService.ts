@@ -127,10 +127,7 @@ export const fetchRegionalOdds = async (jurisdiction: string): Promise<{ analysi
         return { analysis, sources: sources as GroundingChunk[] };
     } catch (error) {
         console.error("Error fetching regional odds:", error);
-        return {
-            analysis: "Could not fetch regional odds analysis. The AI model may be temporarily unavailable or the jurisdiction is not well-documented.",
-            sources: []
-        };
+        throw error;
     }
 };
 
@@ -209,7 +206,7 @@ export const generateAiSessionPlan = async (bankroll: number, goal: number, juri
 
     } catch (error) {
         console.error("Error generating AI session plan:", error);
-        throw new Error("Failed to generate an AI-powered session plan. The model may be temporarily unavailable.");
+        throw error;
     }
 };
 
@@ -250,7 +247,7 @@ export const refineStageForMachine = async (currentStage: HergidStep, machineNam
 
     } catch(error) {
         console.error("Error refining stage:", error);
-        throw new Error("Failed to refine the plan for the specified machine.");
+        throw error;
     }
 };
 
@@ -276,7 +273,7 @@ export const generateDynamicInsight = async (sessionData: any): Promise<string> 
         return response.text.trim();
     } catch (error) {
         console.error("Error generating dynamic insight:", error);
-        return "Analysis unavailable. Stick to the primary plan directives.";
+        throw error;
     }
 };
 
@@ -297,7 +294,7 @@ export const generateCompStrategy = async (coinIn: number, currentTier: string, 
         return response.text.trim();
     } catch (error) {
         console.error("Error generating comp strategy:", error);
-        return "Always ensure your player's card is inserted correctly. Every spin contributes to your rating.";
+        throw error;
     }
 };
 
@@ -354,7 +351,7 @@ export const analyzePaytableImage = async (image: { data: string; mimeType: stri
         return result;
     } catch (error) {
         console.error("Error analyzing paytable image:", error);
-        throw new Error("Failed to analyze machine paytable from image. Please enter details manually.");
+        throw error;
     }
 };
 
@@ -375,6 +372,6 @@ export const getMachineNameFromImage = async (image: { data: string; mimeType: s
         return response.text.trim();
     } catch (error) {
         console.error("Error identifying machine from image:", error);
-        throw new Error("Failed to identify machine from image.");
+        throw error;
     }
 };

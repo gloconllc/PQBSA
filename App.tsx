@@ -105,9 +105,19 @@ const App: React.FC = () => {
         setIsIntelLoading(true);
         setShowIntelModal(true);
         setIntelData(null);
-        const result = await fetchRegionalOdds(sessionData.jurisdiction);
-        setIntelData(result);
-        setIsIntelLoading(false);
+        try {
+            const result = await fetchRegionalOdds(sessionData.jurisdiction);
+            setIntelData(result);
+        } catch (e: any) {
+            let errorMessage = "Could not fetch regional odds analysis. The AI model may be temporarily unavailable or the jurisdiction is not well-documented.";
+            const errorString = (typeof e === 'object' && e !== null) ? JSON.stringify(e) : String(e);
+             if (errorString.includes('RESOURCE_EXHAUSTED') || errorString.includes('429')) {
+                errorMessage = 'AI service is busy (rate limit exceeded). Please try again in a moment.';
+            }
+            setIntelData({ analysis: errorMessage, sources: [] });
+        } finally {
+            setIsIntelLoading(false);
+        }
     };
 
     const renderContent = () => {
