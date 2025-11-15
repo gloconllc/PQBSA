@@ -1,0 +1,8 @@
+{
+  "name": "PQBSA",
+  "description": "",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
