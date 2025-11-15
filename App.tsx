@@ -3,18 +3,21 @@
 // Unauthorized copying, distribution, or use of this code, in whole or in part, is strictly prohibited.
 
 import React, { useState, useEffect } from 'react';
-import type { HergidStep, SessionSpin } from './types';
+import type { HergidStep, SessionSpin, GroundingChunk } from './types';
 import DisclaimerModal from './components/DisclaimerModal';
 import SessionSetup from './components/SessionSetup';
 import PlanDisplay from './components/PlanDisplay';
 import SessionView from './components/SessionView';
 import HelpModal from './components/HelpModal';
+import IntelModal from './components/IntelModal';
 import Button from './components/common/Button';
+import { fetchRegionalOdds } from './services/geminiService';
 
-const SESSION_STORAGE_KEY = 'usba-session';
+const SESSION_STORAGE_KEY = 'pq-protocol-session';
 
 export interface SessionData {
     jurisdiction: string;
+    casino: string;
     bankroll: number;
     goal: number;
     freePlay: number;
@@ -31,12 +34,31 @@ const App: React.FC = () => {
     const [appState, setAppState] = useState<AppState>('disclaimer');
     const [sessionData, setSessionData] = useState<SessionData | null>(null);
     const [showHelp, setShowHelp] = useState(false);
+    const [showIntelModal, setShowIntelModal] = useState(false);
+    const [intelData, setIntelData] = useState<{ analysis: string; sources: GroundingChunk[] } | null>(null);
+    const [isIntelLoading, setIsIntelLoading] = useState(false);
+
 
     useEffect(() => {
         try {
             const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
             if (savedSession) {
-                const data: SessionData = JSON.parse(savedSession);
+                const parsedData = JSON.parse(savedSession);
+                 // Create a default session structure to merge with loaded data
+                // This ensures backward compatibility if the data shape changes
+                const data: SessionData = {
+                    jurisdiction: 'Nevada',
+                    casino: '',
+                    bankroll: 0,
+                    goal: 0,
+                    freePlay: 0,
+                    plan: [],
+                    likelihood: 0,
+                    analysis: '',
+                    spins: [],
+                    currentStageIndex: 0,
+                    ...parsedData, // Overwrite defaults with any saved values
+                };
                 setSessionData(data);
                 setAppState('session');
             } else {
@@ -75,6 +97,19 @@ const App: React.FC = () => {
         setAppState('setup');
     };
 
+    const handleAnalyzeEnvironment = async () => {
+        if (!sessionData?.jurisdiction) {
+            alert("A session with a jurisdiction must be active to analyze the environment.");
+            return;
+        }
+        setIsIntelLoading(true);
+        setShowIntelModal(true);
+        setIntelData(null);
+        const result = await fetchRegionalOdds(sessionData.jurisdiction);
+        setIntelData(result);
+        setIsIntelLoading(false);
+    };
+
     const renderContent = () => {
         switch (appState) {
             case 'disclaimer':
@@ -104,13 +139,23 @@ const App: React.FC = () => {
     return (
         <div className="bg-brand-bg text-brand-text min-h-screen font-sans">
             <header className="p-4 flex justify-between items-center bg-brand-surface/80 backdrop-blur-sm border-b border-brand-primary/20 sticky top-0 z-10">
-                <h1 className="text-2xl font-bold text-brand-primary tracking-widest">USBA</h1>
-                <Button onClick={() => setShowHelp(true)} variant="secondary">Help</Button>
+                <h1 className="text-2xl font-serif font-bold text-brand-primary tracking-widest">The P.Q. Protocol</h1>
+                 <div>
+                    <Button onClick={handleAnalyzeEnvironment} variant="secondary" className="mr-4" disabled={!sessionData}>Analyze Environment</Button>
+                    <Button onClick={() => setShowHelp(true)} variant="secondary">Help</Button>
+                </div>
             </header>
             <main className="p-4 sm:p-6 md:p-8">
                 {renderContent()}
             </main>
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+            {showIntelModal && (
+                <IntelModal 
+                    onClose={() => setShowIntelModal(false)} 
+                    data={intelData}
+                    isLoading={isIntelLoading}
+                />
+            )}
         </div>
     );
 };

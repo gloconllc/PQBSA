@@ -21,31 +21,32 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
       <div className="bg-brand-surface rounded-lg shadow-2xl max-w-2xl w-full p-6 border-2 border-brand-secondary/50 shadow-glow-secondary">
         <div className="flex items-center gap-3 mb-4">
           <span className="text-brand-secondary"><QuestionMarkCircleIcon /></span>
-          <h2 className="text-4xl font-sans text-brand-secondary tracking-widest">How to Play</h2>
+          <h2 className="text-4xl font-serif text-brand-secondary tracking-widest">How It Works</h2>
         </div>
         <div className="space-y-4 text-brand-subtle max-h-[60vh] overflow-y-auto pr-2 font-mono text-sm">
             <dl className="space-y-4">
                 <div>
-                    <dt className="font-bold text-brand-text text-base font-sans">Step 1: Location & Bankroll</dt>
-                    <dd>The app will auto-detect your jurisdiction. Confirm it, then select your casino from the list. If it's not listed, choose <span className="text-brand-accent font-bold">'Other (Enter Manually)'</span>. Finally, input your session bankroll and target hand-pay amount.</dd>
+                    <dt className="font-bold text-brand-text text-base font-sans">Step 1: SESSION SETUP</dt>
+                    <dd>Follow the on-screen steps. First, confirm your gaming <span className="text-brand-accent">Jurisdiction</span>. Second, select your <span className="text-brand-accent">Casino</span> from the AI-generated list, or use the manual search. Finally, input your <span className="text-brand-accent">Bankroll</span>, <span className="text-brand-accent">Free Play</span>, and hand-pay <span className="text-brand-accent">Goal</span>.</dd>
+                </div>
+                <div>
+                    <dt className="font-bold text-brand-text text-base font-sans">Step 2: MASTER PLAN</dt>
+                    <dd>The AI will generate a multi-stage plan using its maximum thinking capacity. Review the directives for each stage, including the target machine, bet strategy, time limits, and critical stop-loss/win-goal triggers. This plan is your strategic roadmap.</dd>
+                </div>
+                <div>
+                    <dt className="font-bold text-brand-text text-base font-sans">Step 3: EXECUTE & TRACK</dt>
+                    <dd>Begin your session. Follow the plan with discipline. Use the <span className="text-brand-accent">Session Tracker</span> to log every spin. This data is vital for tracking your progress and managing cognitive biases.</dd>
                 </div>
                  <div>
-                    <dt className="font-bold text-brand-text text-base font-sans">Step 2: Receive Your Plan</dt>
-                    <dd>Our AI Analyst, using logic developed by Wilton John Picou, III, will generate a prescriptive 'Hergids' plan. This is your command list. It will tell you which specific machine to find, what denomination to play, and exactly how much to bet.</dd>
+                    <dt className="font-bold text-brand-text text-base font-sans">Step 4: DYNAMIC REFINEMENT</dt>
+                    <dd>If you can't find the exact machine in your plan, use the <span className="text-brand-accent">Machine Check-in</span> feature. Enter the name of the machine you are playing, and the AI will refine your strategy in real-time for that specific game.</dd>
                 </div>
-                 <div>
-                    <dt className="font-bold text-brand-text text-base font-sans">Step 3: Execute the Mission</dt>
-                    <dd>Follow the plan without deviation. Use the Session Tracker to log your spins. The app will tell you when you've hit your 'Stop-Loss' or 'Win-Goal' for the current stage.</dd>
-                </div>
-                 <div>
-                    <dt className="font-bold text-brand-text text-base font-sans">Step 4: Report Success</dt>
-                    <dd>When you hit a hand-pay, press the <span className="text-brand-accent font-bold">'I WON! (Hand-Pay)'</span> button. This crucial feedback helps refine our core logic, making the AI smarter for everyone.</dd>
-                </div>
-                 <div>
-                    <dt className="font-bold text-brand-primary text-base font-sans">Core Principle by Wilton John Picou, III</dt>
-                    <dd>Trust the AI. Its plan is based on a complex analysis of vendor programming, casino odds, and our proprietary logic. Your role is to execute its strategy with discipline.</dd>
+                <div>
+                    <dt className="font-bold text-brand-text text-base font-sans">ANALYZE ENVIRONMENT</dt>
+                    <dd>At any time, press "Analyze Environment" in the header to get a live AI analysis of the gaming conditions in your current jurisdiction.</dd>
                 </div>
             </dl>
+            <p className="font-bold text-brand-text pt-4 border-t border-brand-subtle/20">This protocol is the proprietary logic of Wilton John Picou, III of GloCon Solutions, LLC. It is designed to provide a strategic framework for bankroll management, not to predict outcomes.</p>
         </div>
         <div className="mt-6 flex justify-end">
           <Button onClick={onClose} variant="secondary">Close</Button>

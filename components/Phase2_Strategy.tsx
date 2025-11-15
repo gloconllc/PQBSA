@@ -50,7 +50,7 @@ const Phase2_Strategy: React.FC<Phase2Props> = ({ bankroll, onBankrollUpdate, ju
       setError(null);
       setSessionPlan([]);
       try {
-        const result = await generateAiSessionPlan(bankroll.total, bankroll.goal, jurisdiction, casino, bankroll.freePlay || 0, strategy);
+        const result = await generateAiSessionPlan(bankroll.total, bankroll.goal, jurisdiction, casino, bankroll.freePlay || 0);
         setSessionPlan(result.plan);
       } catch (e) {
           setError(e instanceof Error ? e.message : "An unknown error occurred.");
@@ -98,7 +98,7 @@ const Phase2_Strategy: React.FC<Phase2Props> = ({ bankroll, onBankrollUpdate, ju
       </Card>
       
       <div className="md:col-span-1">
-        <h3 className="text-3xl font-sans text-brand-secondary tracking-widest mb-4">AI-Generated "Hergids" Plan</h3>
+        <h3 className="text-3xl font-serif text-brand-secondary tracking-widest mb-4">AI-Generated "Hergids" Plan</h3>
         <div className="space-y-4">
             {isLoading && <div className="p-4 bg-brand-surface/50 rounded-md"><Spinner /></div>}
             {error && <p className="text-red-400 p-4 bg-red-900/20 rounded-md font-sans">{error}</p>}

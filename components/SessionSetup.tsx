@@ -3,7 +3,7 @@
 // Unauthorized copying, distribution, or use of this code, in whole or in part, is strictly prohibited.
 
 import React, { useState, useEffect } from 'react';
-import { getJurisdictionFromCoords, findCasinosInJurisdiction, generateAiSessionPlan } from '../services/geminiService';
+import { getJurisdictionFromCoords, findCasinosInJurisdiction, searchForCasino, generateAiSessionPlan } from '../services/geminiService';
 import type { SessionData } from '../App';
 import Button from './common/Button';
 import Input from './common/Input';
@@ -13,40 +13,69 @@ interface SessionSetupProps {
     onSetupComplete: (data: Omit<SessionData, 'spins' | 'currentStageIndex'>) => void;
 }
 
+type SetupStep = 'location' | 'casino' | 'bankroll' | 'generating';
+
+const Stepper: React.FC<{ currentStep: SetupStep }> = ({ currentStep }) => {
+    const steps: { id: SetupStep; label: string }[] = [
+        { id: 'location', label: 'Location' },
+        { id: 'casino', label: 'Casino' },
+        { id: 'bankroll', label: 'Bankroll' },
+    ];
+    const currentIndex = steps.findIndex(s => s.id === currentStep);
+
+    return (
+        <div className="flex justify-between items-center mb-6 px-2">
+            {steps.map((step, index) => {
+                const isActive = index <= currentIndex || currentStep === 'generating';
+                return (
+                    <React.Fragment key={step.id}>
+                        <div className="flex flex-col items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-brand-primary text-brand-bg border-brand-primary' : 'bg-brand-surface border-brand-subtle'}`}>
+                                {index + 1}
+                            </div>
+                            <p className={`mt-2 text-xs font-sans ${isActive ? 'text-brand-primary' : 'text-brand-subtle'}`}>{step.label}</p>
+                        </div>
+                        {index < steps.length - 1 && (
+                            <div className={`flex-grow h-0.5 mx-2 ${isActive ? 'bg-brand-primary' : 'bg-brand-subtle'}`} />
+                        )}
+                    </React.Fragment>
+                );
+            })}
+        </div>
+    );
+};
+
 const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
-    const [step, setStep] = useState<'location' | 'casino' | 'bankroll' | 'generating'>('location');
+    const [step, setStep] = useState<SetupStep>('location');
     const [jurisdiction, setJurisdiction] = useState('');
     const [error, setError] = useState('');
     
     const [casinos, setCasinos] = useState<string[]>([]);
     const [isFetchingCasinos, setIsFetchingCasinos] = useState(false);
     const [selectedCasino, setSelectedCasino] = useState('');
-    const [manualCasino, setManualCasino] = useState('');
-
-    const [bankroll, setBankroll] = useState(500);
-    const [goal, setGoal] = useState(5000);
-    const [freePlay, setFreePlay] = useState(0);
+    const [isManualEntry, setIsManualEntry] = useState(false);
+    const [manualCasinoQuery, setManualCasinoQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 try {
-                    const juris = await getJurisdictionFromCoords(position.coords.latitude, position.coords.longitude);
+                    const { latitude, longitude } = position.coords;
+                    const juris = await getJurisdictionFromCoords(latitude, longitude);
                     setJurisdiction(juris);
                 } catch (e) {
-                    setError('Could not determine jurisdiction. Defaulting to "Nevada".');
-                    setJurisdiction('Nevada');
+                    setError('Could not determine jurisdiction. You can enter it manually if needed.');
                 }
             },
             () => {
-                setError('Location access denied. Defaulting to "Nevada".');
-                setJurisdiction('Nevada');
+                setError('Location access denied. Please select a jurisdiction manually.');
             },
             { timeout: 10000 }
         );
     }, []);
 
-    const handleConfirmLocation = async () => {
+    const handleFetchCasinos = async () => {
         if (!jurisdiction) return;
         setIsFetchingCasinos(true);
         setError('');
@@ -55,122 +84,187 @@ const SessionSetup: React.FC<SessionSetupProps> = ({ onSetupComplete }) => {
             setCasinos(casinoList);
             if (casinoList.length > 0) {
                 setSelectedCasino(casinoList[0]);
+                setIsManualEntry(false);
+            } else {
+                setIsManualEntry(true);
             }
-            setStep('casino');
         } catch (e) {
-            setError('Could not fetch casinos. Please proceed with manual entry.');
-            setSelectedCasino('Other'); // Force manual entry on error
-            setStep('casino'); 
+            setError('Could not fetch casinos. Please try again or enter manually.');
+            setCasinos([]);
+            setIsManualEntry(true);
         } finally {
             setIsFetchingCasinos(false);
         }
+    };
+    
+    const handleConfirmLocation = async () => {
+        if (!jurisdiction) {
+            setError("Please select or enter a jurisdiction.");
+            return;
+        }
+        await handleFetchCasinos();
+        setStep('casino');
+    };
+
+     const handleManualSearch = async () => {
+        if (!manualCasinoQuery) return;
+        setIsSearching(true);
+        const results = await searchForCasino(jurisdiction, manualCasinoQuery);
+        if (results.length > 0) {
+            setCasinos(prev => [...new Set([...results, ...prev])]); // Add new results to list
+            setSelectedCasino(results[0]); // Select the first result
+            setIsManualEntry(false);
+        } else {
+            alert("No casinos found for that search. You can still enter it manually.");
+            setSelectedCasino(manualCasinoQuery); // Use the query as the manual entry
+        }
+        setIsSearching(false);
     };
 
     const handleGeneratePlan = async () => {
         setStep('generating');
         setError('');
         try {
-            const finalCasino = selectedCasino === 'Other' ? manualCasino : selectedCasino;
-            if (!finalCasino) {
-                throw new Error("Casino name is required.");
+            if (!selectedCasino) {
+                 throw new Error("A casino must be selected or entered.");
             }
-            const result = await generateAiSessionPlan(bankroll, goal, jurisdiction, finalCasino, freePlay);
-            onSetupComplete({ jurisdiction, bankroll, goal, freePlay, ...result });
+            const result = await generateAiSessionPlan(bankroll, goal, jurisdiction, selectedCasino, freePlay);
+            onSetupComplete({ jurisdiction, bankroll, goal, freePlay, casino: selectedCasino, ...result });
         } catch (e) {
             setError(e instanceof Error ? e.message : 'An unknown error occurred.');
             setStep('bankroll');
         }
     };
     
-    const renderLocationStep = () => (
-        <div className="text-center p-6 bg-brand-surface border border-brand-primary/30 rounded-lg animate-fade-in">
-            <h2 className="text-3xl font-bold text-brand-primary mb-4">Detecting Location...</h2>
-            {!jurisdiction && !error && <Spinner />}
-            {error && <p className="text-brand-secondary mb-4">{error}</p>}
-            {jurisdiction && (
-                <>
-                    <p className="text-xl mb-6">Gaming Jurisdiction Detected: <span className="font-bold text-brand-accent">{jurisdiction}</span></p>
-                    <Button onClick={handleConfirmLocation} variant="primary" disabled={isFetchingCasinos}>
-                        {isFetchingCasinos ? <Spinner /> : "Confirm & Select Casino"}
-                    </Button>
-                </>
-            )}
-        </div>
-    );
+    const [bankroll, setBankroll] = useState(500);
+    const [goal, setGoal] = useState(5000);
+    const [freePlay, setFreePlay] = useState(0);
+    
+    const renderContent = () => {
+        switch (step) {
+            case 'location':
+                return (
+                    <div className="text-center animate-fade-in space-y-4">
+                        <h2 className="text-2xl font-serif font-bold text-brand-primary mb-2">Identify Jurisdiction</h2>
+                        <p className="text-brand-subtle">
+                            {jurisdiction ? `Detected Jurisdiction: ` : 'Attempting to detect location...'}
+                            {jurisdiction && <span className="font-bold text-brand-accent">{jurisdiction}</span>}
+                        </p>
+                        
+                        {error && !jurisdiction && <p className="text-brand-secondary mb-4">{error}</p>}
+                        
+                        <div>
+                            <Input
+                                label="Or Enter Manually"
+                                id="manual-jurisdiction"
+                                value={jurisdiction}
+                                onChange={e => setJurisdiction(e.target.value)}
+                                placeholder="e.g., California"
+                            />
+                        </div>
 
-    const renderCasinoStep = () => (
-        <div className="p-6 bg-brand-surface border border-brand-primary/30 rounded-lg animate-fade-in">
-            <h2 className="text-3xl font-bold text-brand-primary mb-6 text-center">Select Your Casino</h2>
-            <div className="space-y-6">
-                <div>
-                    <label htmlFor="casino" className="block text-sm font-sans tracking-wider text-brand-subtle mb-2">
-                        Choose from casinos in {jurisdiction}
-                    </label>
-                    <select
-                        id="casino"
-                        value={selectedCasino}
-                        onChange={e => setSelectedCasino(e.target.value)}
-                        className="w-full bg-black/30 border-2 border-brand-subtle/50 rounded-md p-3 text-brand-text focus:ring-0 focus:border-brand-primary focus:shadow-glow-primary transition-shadow duration-200 font-mono text-lg"
-                    >
-                        {casinos.map(c => <option key={c} value={c}>{c}</option>)}
-                        <option value="Other">Other (Enter Manually)</option>
-                    </select>
-                </div>
-
-                {selectedCasino === 'Other' && (
-                     <div className="animate-fade-in">
-                        <Input
-                            label="Enter Casino Name Manually"
-                            id="manualCasino"
-                            value={manualCasino}
-                            onChange={e => setManualCasino(e.target.value)}
-                            placeholder="e.g., Valley View Casino"
-                        />
+                        <Button onClick={handleConfirmLocation} variant="primary" disabled={isFetchingCasinos || !jurisdiction}>
+                            {isFetchingCasinos ? <Spinner /> : "Confirm & Select Casino"}
+                        </Button>
                     </div>
-                )}
-                
-                <Button onClick={() => setStep('bankroll')} variant="primary" className="w-full">Next: Set Bankroll</Button>
-            </div>
-        </div>
-    );
+                );
+            case 'casino':
+                 return (
+                    <div className="animate-fade-in">
+                        <h2 className="text-2xl font-serif font-bold text-brand-primary mb-4 text-center">Select Your Casino</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="casino-select" className="block text-sm font-sans tracking-wider text-brand-subtle mb-2">
+                                   AI-Generated List for {jurisdiction}
+                                </label>
+                                <div className="flex gap-2">
+                                <select
+                                    id="casino-select"
+                                    value={selectedCasino}
+                                    onChange={e => setSelectedCasino(e.target.value)}
+                                    className="w-full bg-black/30 border-2 border-brand-subtle/50 rounded-md p-3 text-brand-text focus:ring-0 focus:border-brand-primary focus:shadow-glow-primary transition-shadow duration-200 font-mono text-lg"
+                                    disabled={isManualEntry}
+                                >
+                                    {casinos.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                <Button onClick={handleFetchCasinos} disabled={isFetchingCasinos} className="flex-shrink-0">{isFetchingCasinos ? <Spinner/> : 'Refresh'}</Button>
+                                </div>
+                                 <Button onClick={() => setIsManualEntry(!isManualEntry)} variant={isManualEntry ? 'primary' : 'secondary'} className="w-full text-sm py-2 mt-2">
+                                   {isManualEntry ? 'Select from List' : 'Search or Enter Manually'}
+                                </Button>
+                            </div>
 
-    const renderBankrollStep = () => (
-         <div className="p-6 bg-brand-surface border border-brand-primary/30 rounded-lg animate-fade-in">
-            <h2 className="text-3xl font-bold text-brand-primary mb-6 text-center">Set Your Session</h2>
-            <div className="space-y-6">
-                <Input label="Input your entire session bankroll ($)" id="bankroll" type="number" value={bankroll || ''} onChange={e => setBankroll(parseInt(e.target.value))} />
-                <Input label="Free Play Amount ($) (Enter 0 if none)" id="freePlay" type="number" value={freePlay || ''} onChange={e => setFreePlay(parseInt(e.target.value))} />
-                <Input label="Target Jackpot / Hand-Pay Amount ($)" id="goal" type="number" value={goal || ''} onChange={e => setGoal(parseInt(e.target.value))} />
-                <Button 
-                  onClick={handleGeneratePlan} 
-                  disabled={!bankroll || !goal || goal <= bankroll || (selectedCasino === 'Other' && !manualCasino)} 
-                  variant="accent" 
-                  className="w-full"
-                >
-                    Generate Master Plan
-                </Button>
-                {goal > 0 && goal <= bankroll && <p className="text-red-400 text-xs text-center font-sans">Goal must be greater than bankroll.</p>}
-                {(selectedCasino === 'Other' && !manualCasino) && <p className="text-yellow-400 text-xs text-center font-sans">Please enter a casino name.</p>}
-                {error && <p className="text-brand-secondary text-center font-sans">{error}</p>}
-            </div>
-        </div>
-    );
-
-    const renderGeneratingStep = () => (
-         <div className="text-center p-6 bg-brand-surface border border-brand-primary/30 rounded-lg animate-fade-in">
-            <h2 className="text-3xl font-bold text-brand-primary mb-4">AI Analyst is generating your plan...</h2>
-            <p className="text-brand-subtle mb-6">Analyzing casino odds, machine data, and gaming commission policies for {jurisdiction} according to the logic of Wilton John Picou, III...</p>
-            <Spinner />
-        </div>
-    );
-
+                            {isManualEntry && (
+                                <div className="animate-fade-in p-4 border border-brand-subtle/20 rounded-lg bg-black/20">
+                                    <div className="flex gap-2">
+                                        <Input
+                                            label="Search for a casino"
+                                            id="manualCasinoSearch"
+                                            value={manualCasinoQuery}
+                                            onChange={e => setManualCasinoQuery(e.target.value)}
+                                            placeholder="e.g., Valley View"
+                                        />
+                                        <Button onClick={handleManualSearch} disabled={isSearching} className="self-end">{isSearching ? <Spinner/> : 'Search'}</Button>
+                                    </div>
+                                    <div className="relative flex items-center my-4">
+                                        <div className="flex-grow border-t border-brand-subtle/30"></div>
+                                        <span className="flex-shrink mx-4 text-brand-subtle text-xs font-sans">OR</span>
+                                        <div className="flex-grow border-t border-brand-subtle/30"></div>
+                                    </div>
+                                    <Input
+                                        label="Enter Casino Name Directly"
+                                        id="manualCasino"
+                                        value={selectedCasino}
+                                        onChange={e => setSelectedCasino(e.target.value)}
+                                        placeholder="e.g., Valley View Casino & Hotel"
+                                    />
+                                </div>
+                            )}
+                             <div className="flex gap-4 mt-4">
+                                <Button onClick={() => setStep('location')} variant="secondary" className="w-full">Back</Button>
+                                <Button onClick={() => setStep('bankroll')} variant="primary" className="w-full" disabled={!selectedCasino}>Next</Button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'bankroll':
+                return (
+                    <div className="animate-fade-in">
+                        <h2 className="text-2xl font-serif font-bold text-brand-primary mb-4 text-center">Set Your Session</h2>
+                        <div className="space-y-4">
+                            <Input label="Input your entire session bankroll ($)" id="bankroll" type="number" value={bankroll || ''} onChange={e => setBankroll(parseInt(e.target.value))} />
+                             <p className="text-xs text-center text-red-400 font-sans mt-2">{!bankroll && "Bankroll is required."}</p>
+                            <Input label="Free Play Amount ($) (Enter 0 if none)" id="freePlay" type="number" value={freePlay || ''} onChange={e => setFreePlay(parseInt(e.target.value))} />
+                            <Input label="Target Jackpot / Hand-Pay Amount ($)" id="goal" type="number" value={goal || ''} onChange={e => setGoal(parseInt(e.target.value))} />
+                            <p className="text-xs text-center text-red-400 font-sans mt-2">{!goal && "Goal is required."}</p>
+                            
+                             <Button onClick={handleGeneratePlan} disabled={!bankroll || !goal || goal <= bankroll || !selectedCasino} variant="accent" className="w-full">
+                                Generate Master Plan
+                            </Button>
+                            {goal > 0 && goal <= bankroll && <p className="text-red-400 text-xs text-center font-sans">Goal must be greater than bankroll.</p>}
+                            {!selectedCasino && <p className="text-yellow-400 text-xs text-center font-sans">Please select a casino.</p>}
+                            {error && <p className="text-brand-secondary text-center font-sans">{error}</p>}
+                             <Button onClick={() => setStep('casino')} variant="secondary" className="w-full">Back</Button>
+                        </div>
+                    </div>
+                );
+            case 'generating':
+                return (
+                    <div className="text-center p-6 animate-fade-in">
+                        <h2 className="text-3xl font-serif font-bold text-brand-primary mb-4">AI Analyst is generating your plan...</h2>
+                        <p className="text-brand-subtle mb-6">Analyzing casino odds, machine data, and gaming commission policies for {jurisdiction} according to the logic of Wilton John Picou, III...</p>
+                        <Spinner />
+                    </div>
+                );
+        }
+    };
 
     return (
-        <div className="max-w-2xl mx-auto">
-            {step === 'location' && renderLocationStep()}
-            {step === 'casino' && renderCasinoStep()}
-            {step === 'bankroll' && renderBankrollStep()}
-            {step === 'generating' && renderGeneratingStep()}
+        <div className="max-w-2xl mx-auto p-6 bg-brand-surface border border-brand-primary/30 rounded-lg animate-fade-in">
+            <Stepper currentStep={step} />
+            <div className="mt-6">
+                {renderContent()}
+            </div>
         </div>
     );
 };

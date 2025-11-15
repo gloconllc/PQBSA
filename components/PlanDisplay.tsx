@@ -18,57 +18,62 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan, likelihood, analysis, o
     return (
         <div className="max-w-4xl mx-auto animate-fade-in space-y-8">
             <div className="text-center">
-                <h2 className="text-4xl font-bold text-brand-primary tracking-widest">YOUR MASTER PLAN</h2>
+                <h2 className="text-4xl font-serif font-bold text-brand-primary tracking-widest">YOUR MASTER PLAN</h2>
                 <p className="text-brand-subtle mt-2">Execute with precision. This is your path to a hand-pay, designed by Wilton John Picou, III.</p>
             </div>
 
             <Card className="border-brand-accent/50">
-                <h3 className="text-2xl font-bold text-brand-accent tracking-widest text-center mb-4">AI Likelihood Analysis</h3>
+                <h3 className="text-2xl font-serif font-bold text-brand-accent tracking-widest text-center mb-4">Mission Parameters</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
                     <div className="text-center">
-                         <p className="font-sans text-brand-subtle uppercase">Likelihood of Success with this Plan</p>
+                         <p className="font-sans text-brand-subtle uppercase">Initial Calculated Likelihood of Success</p>
                          <p className="font-mono text-7xl font-black text-brand-accent animate-pulse-slow">{likelihood}%</p>
                     </div>
                     <div className="md:col-span-2 text-sm font-sans text-brand-subtle bg-black/30 p-4 rounded-lg">
-                        <p className="text-brand-text mb-2 font-bold">Strategic Analysis by Wilton John Picou, III:</p>
+                        <p className="text-brand-text mb-2 font-bold">Mission Briefing by Wilton John Picou, III:</p>
                         {analysis}
                     </div>
                 </div>
             </Card>
 
+            <h3 className="text-3xl font-serif font-bold text-brand-primary tracking-widest text-center">Plan Directives</h3>
             <div className="space-y-4">
                 {plan.map((step, index) => (
                     <div 
                         key={step.stage} 
                         className="bg-brand-surface p-4 rounded-lg border border-brand-primary/20"
-                        style={{ animation: `fadeIn 0.5s ease-in-out ${index * 0.2}s forwards`, opacity: 0 }}
+                        style={{ animation: `fadeIn 0.5s ease-in-out ${index * 0.15}s forwards`, opacity: 0 }}
                     >
-                        <h3 className="font-sans text-xl text-brand-primary">Stage {step.stage}: Find "{step.gameName}"</h3>
-                        <p className="text-sm text-brand-subtle font-sans">{step.objective}</p>
-                        <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs font-mono">
-                            <div className="bg-black/30 p-2 rounded">
-                                <span className="text-brand-subtle block font-sans uppercase">Machine Type</span>
-                                <span className="text-brand-text font-semibold">{step.machineType}</span>
+                        <h3 className="font-serif text-xl text-brand-primary">Stage {step.stage}: Locate "{step.gameName}"</h3>
+                        
+                        <div className="mt-4 p-4 bg-black/50 rounded-lg">
+                            <p className="text-brand-subtle font-sans text-sm uppercase tracking-wider">Command</p>
+                            <p className="font-sans text-lg text-brand-text">{step.betStrategy}</p>
+                        </div>
+
+                         <div className="mt-2 p-3 bg-brand-bg/30 rounded-lg">
+                             <p className="text-brand-subtle font-sans text-xs uppercase tracking-wider">AI Reasoning</p>
+                             <p className="font-sans text-sm text-brand-subtle italic">"{step.reasoning}"</p>
+                        </div>
+                        
+                        <div className="mt-3 grid grid-cols-2 md:grid-cols-2 gap-2 text-center">
+                            <div className="bg-red-900/50 p-2 rounded">
+                                <span className="text-red-300 block font-sans uppercase text-xs">Stop-Loss Trigger</span>
+                                <span className="text-red-200 font-bold text-lg font-mono">${step.stopLoss.toFixed(2)}</span>
                             </div>
-                            <div className="bg-black/30 p-2 rounded">
-                                <span className="text-brand-subtle block font-sans uppercase">Denomination</span>
-                                <span className="text-brand-text font-semibold">{step.denomination}</span>
+                            <div className="bg-green-900/50 p-2 rounded">
+                                <span className="text-green-300 block font-sans uppercase text-xs">Advance Trigger</span>
+                                <span className="text-green-200 font-bold text-lg font-mono">${step.winGoal.toFixed(2)}</span>
                             </div>
-                             <div className="bg-black/30 p-2 rounded">
-                                <span className="text-brand-subtle block font-sans uppercase">Target Spins</span>
-                                <span className="text-brand-text font-semibold">~{step.spinCount}</span>
+                        </div>
+                         <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="bg-black/30 p-2 rounded text-center">
+                                <span className="text-brand-subtle block font-sans uppercase text-xs">Time Limit</span>
+                                <span className="text-brand-text font-bold text-lg font-mono">{step.timeLimitMinutes} minutes</span>
                             </div>
-                            <div className="bg-black/30 p-2 rounded col-span-2">
-                                <span className="text-brand-subtle block font-sans uppercase">Command</span>
-                                <span className="text-brand-accent font-semibold">{step.betStrategy}</span>
-                            </div>
-                             <div className="bg-red-900/50 p-2 rounded col-span-2 md:col-span-2">
-                                <span className="text-red-300 block font-sans uppercase">Stop-Loss At</span>
-                                <span className="text-red-200 font-bold text-base">${step.stopLoss.toFixed(2)}</span>
-                            </div>
-                            <div className="bg-green-900/50 p-2 rounded col-span-2 md:col-span-3">
-                                <span className="text-green-300 block font-sans uppercase">Advance At</span>
-                                <span className="text-green-200 font-bold text-base">${step.winGoal.toFixed(2)}</span>
+                            <div className="bg-brand-secondary/20 p-2 rounded">
+                                <p className="text-brand-subtle font-sans text-xs uppercase tracking-wider text-center">Contingency Plan</p>
+                                <p className="font-sans text-sm text-brand-subtle text-center">{step.contingencyPlan}</p>
                             </div>
                         </div>
                     </div>

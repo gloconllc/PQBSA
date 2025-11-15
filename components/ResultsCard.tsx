@@ -55,7 +55,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ title, content, sources, isLo
     <div className="bg-brand-surface border border-brand-primary/30 rounded-lg p-6 animate-fade-in shadow-lg transition-all hover:shadow-glow-primary">
       <div className="flex items-center gap-3 mb-4">
         <LightBulbIcon className="w-8 h-8 text-brand-accent" />
-        <h2 className="text-2xl font-bold text-brand-accent tracking-wider font-sans">{title}</h2>
+        <h2 className="text-2xl font-serif font-bold text-brand-accent tracking-wider">{title}</h2>
       </div>
 
       <p className="text-brand-text whitespace-pre-wrap leading-relaxed font-sans">{content}</p>

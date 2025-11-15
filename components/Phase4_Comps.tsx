@@ -52,7 +52,7 @@ const Phase4_Comps: React.FC<Phase4Props> = ({ coinIn }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Inputs & Calcs */}
                 <div>
-                     <h3 className="font-semibold text-brand-secondary mb-2 font-sans text-lg">THEO Calculator & Tier Tracker</h3>
+                     <h3 className="font-semibold text-brand-secondary mb-2 font-serif text-lg">THEO Calculator & Tier Tracker</h3>
                     <div className="space-y-3 bg-brand-bg/50 p-4 rounded-lg">
                         <Input 
                             label="Current Player Tier" 
@@ -92,7 +92,7 @@ const Phase4_Comps: React.FC<Phase4Props> = ({ coinIn }) => {
 
                 {/* Optimizer */}
                  <div>
-                     <h3 className="font-semibold text-brand-secondary mb-2 font-sans text-lg">Comp Optimizer</h3>
+                     <h3 className="font-semibold text-brand-secondary mb-2 font-serif text-lg">Comp Optimizer</h3>
                      <div className="bg-brand-bg/50 p-4 rounded-lg h-full flex flex-col">
                         <Button onClick={generateSuggestion} className="w-full" variant="accent">Generate Comp Strategy</Button>
                         {suggestion && (

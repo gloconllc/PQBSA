@@ -18,10 +18,10 @@ const Card: React.FC<CardProps> = ({ children, className, title, icon }) => {
         icon ? (
           <div className="flex items-center gap-3 mb-4">
             {icon}
-            <h2 className="text-2xl font-bold text-brand-primary tracking-widest">{title}</h2>
+            <h2 className="text-2xl font-bold font-serif text-brand-primary tracking-widest">{title}</h2>
           </div>
         ) : (
-          <h2 className="text-2xl font-bold text-brand-primary tracking-widest mb-4">{title}</h2>
+          <h2 className="text-2xl font-bold font-serif text-brand-primary tracking-widest mb-4">{title}</h2>
         )
       )}
       <div className="space-y-4 text-brand-text">

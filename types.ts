@@ -17,13 +17,18 @@ export interface BankrollInfo {
 
 export interface HergidStep {
   stage: number;
-  machineType: string;
   gameName: string;
-  denomination: string;
   betStrategy: string;
+  reasoning: string;
   objective: string;
   stopLoss: number;
   winGoal: number;
+  timeLimitMinutes: number;
+  contingencyPlan: string;
+  isRefined?: boolean;
+  // Deprecated fields, kept for potential backward compatibility with old local storage data
+  machineType: string;
+  denomination: string;
   spinCount: number;
 }
 
@@ -43,6 +48,16 @@ export interface GroundingChunk {
   web?: {
     uri: string;
     title: string;
+  };
+  maps?: {
+    uri: string;
+    title: string;
+    placeAnswerSources?: { 
+        reviewSnippets: { 
+            uri: string; 
+            content: string 
+        }[] 
+    }[]
   };
 }
 

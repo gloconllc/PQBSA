@@ -49,7 +49,7 @@ const Phase3_Psychology: React.FC<Phase3Props> = ({ spins, setSpins }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Spin Logger */}
                 <div>
-                    <h3 className="font-semibold text-brand-secondary mb-2 font-sans text-lg">Live Spin Logger</h3>
+                    <h3 className="font-semibold text-brand-secondary mb-2 font-serif text-lg">Live Spin Logger</h3>
                     <form onSubmit={handleLogSpin} className="space-y-3 bg-brand-bg/50 p-4 rounded-lg">
                         <Input 
                             label="Total Bet ($)" 
@@ -92,7 +92,7 @@ const Phase3_Psychology: React.FC<Phase3Props> = ({ spins, setSpins }) => {
 
                 {/* Spin History */}
                 <div className="max-h-80 overflow-y-auto pr-2">
-                     <h3 className="font-semibold text-brand-secondary mb-2 font-sans text-lg">Spin History</h3>
+                     <h3 className="font-semibold text-brand-secondary mb-2 font-serif text-lg">Spin History</h3>
                     {spins.length === 0 ? (
                         <div className="text-sm text-brand-subtle text-center py-8 bg-brand-bg/20 rounded-lg font-sans">Your logged spins will appear here.</div>
                     ) : (

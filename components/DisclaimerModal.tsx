@@ -21,10 +21,10 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ onAccept }) => {
       <div className="bg-brand-surface rounded-lg shadow-2xl max-w-2xl w-full p-6 border-2 border-brand-primary/50 shadow-glow-primary">
         <div className="flex items-center gap-3 mb-4">
           <span className="text-brand-primary"><ShieldCheckIcon /></span>
-          <h2 className="text-4xl font-sans text-brand-primary tracking-widest">Disclaimer</h2>
+          <h2 className="text-4xl font-serif text-brand-primary tracking-widest">Disclaimer</h2>
         </div>
         <div className="space-y-4 text-brand-subtle max-h-[60vh] overflow-y-auto pr-2 font-mono text-sm">
-          <p>The Ultimate Slot Betting Assistant (USBA) is an analytical tool for informational and entertainment purposes only. This work is the intellectual property of Wilton John Picou, III of GloCon Solutions, LLC.</p>
+          <p>The P.Q. Protocol (Proprietary Quantum Protocol) is an analytical tool for informational and entertainment purposes only. This work is the intellectual property of Wilton John Picou, III of GloCon Solutions, LLC.</p>
           <p><span className="font-bold text-brand-text">This app does NOT guarantee winnings or predict outcomes.</span> Slot machines are games of chance, and their outcomes are determined by a regulated Random Number Generator (RNG).</p>
           <p>The strategies provided are based on the proprietary AI logic of Wilton John Picou, III of GloCon Solutions, LLC for bankroll management and volatility assessment. They are designed to manage your funds strategically, not to influence the machine's results.</p>
           <p>This app does <span className="font-bold text-brand-text">NOT</span> electronically interfere with, communicate with, or modify any slot machine hardware or software.</p>

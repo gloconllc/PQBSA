@@ -2,12 +2,14 @@
 // This code is the proprietary intellectual property of Wilton John Picou, III and GloCon Solutions, LLC.
 // Unauthorized copying, distribution, or use of this code, in whole or in part, is strictly prohibited.
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { SessionData } from '../App';
 import type { SessionSpin } from '../types';
 import Button from './common/Button';
 import Input from './common/Input';
 import Card from './common/Card';
+import Spinner from './common/Spinner';
+import { refineStageForMachine, generateDynamicInsight, generateCompStrategy } from '../services/geminiService';
 
 interface SessionViewProps {
     sessionData: SessionData;
@@ -15,10 +17,18 @@ interface SessionViewProps {
     onEndSession: () => void;
 }
 
-const SessionTracker: React.FC<{ spins: SessionSpin[], onLogSpin: (spin: SessionSpin) => void }> = ({ spins, onLogSpin }) => {
-    const [currentBet, setCurrentBet] = useState(2.50);
+const SessionTracker: React.FC<{ spins: SessionSpin[], onLogSpin: (spin: SessionSpin) => void, defaultBet: number }> = ({ spins, onLogSpin, defaultBet }) => {
+    const [currentBet, setCurrentBet] = useState(defaultBet);
     const [currentWin, setCurrentWin] = useState(0);
     const winInputRef = React.useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        // Update bet amount if the stage's default bet changes
+        const betMatch = defaultBet;
+        if (betMatch) {
+            setCurrentBet(betMatch);
+        }
+    }, [defaultBet]);
 
     const handleLogSpin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -76,46 +86,95 @@ const SessionTracker: React.FC<{ spins: SessionSpin[], onLogSpin: (spin: Session
 };
 
 const CompsOptimizer: React.FC<{ coinIn: number }> = ({ coinIn }) => {
-    const [houseEdge, setHouseEdge] = useState(8);
-    const theo = useMemo(() => coinIn * (houseEdge / 100), [coinIn, houseEdge]);
+    const [tier, setTier] = useState('');
+    const [points, setPoints] = useState(0);
+    const [strategy, setStrategy] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleGenerate = async () => {
+        setIsLoading(true);
+        const result = await generateCompStrategy(coinIn, tier, points);
+        setStrategy(result);
+        setIsLoading(false);
+    };
+
     return (
         <div className="space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div className="bg-black/30 p-4 rounded-lg">
-                    <span className="text-sm text-brand-subtle block font-sans">EST. HOUSE EDGE</span>
-                    <input type="number" value={houseEdge} onChange={e => setHouseEdge(parseFloat(e.target.value))} className="w-20 bg-transparent text-center text-2xl font-bold text-brand-accent font-mono" />
-                </div>
-                <div className="bg-black/30 p-4 rounded-lg">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Current Tier" id="tier" value={tier} onChange={e => setTier(e.target.value)} placeholder="e.g., Gold" />
+                <Input label="Points to Next Tier" id="points" type="number" value={points || ''} onChange={e => setPoints(parseInt(e.target.value))} placeholder="e.g., 250" />
+            </div>
+            <div className="bg-black/30 p-4 rounded-lg text-center">
                     <span className="text-sm text-brand-subtle block font-sans">TOTAL COIN-IN</span>
                     <span className="text-2xl font-bold text-brand-primary font-mono">${coinIn.toFixed(2)}</span>
-                </div>
-                <div className="bg-black/30 p-4 rounded-lg">
-                    <span className="text-sm text-brand-subtle block font-sans">YOUR THEO</span>
-                    <span className="text-2xl font-bold text-brand-primary font-mono">${theo.toFixed(2)}</span>
-                </div>
             </div>
-            <p className="text-sm text-brand-subtle font-sans text-center">Your THEO (Theoretical Loss) is what the casino values. Higher THEO leads to better comps like free play, rooms, and food. Logic by Wilton John Picou, III.</p>
+            <Button onClick={handleGenerate} disabled={isLoading} className="w-full flex justify-center" variant="secondary">
+                {isLoading ? <Spinner /> : "Generate Comp Strategy"}
+            </Button>
+            {strategy && <div className="p-4 bg-black/30 rounded-lg text-brand-subtle font-sans">{strategy}</div>}
         </div>
     );
 };
 
-const AlgorithmInsights = () => (
-     <div className="space-y-4 text-sm font-sans text-brand-subtle">
-        <p><strong className="text-brand-text">Why this works (Analysis by Wilton John Picou, III):</strong> Our AI doesn't predict random numbers. It creates a strategy based on a machine's known volatility, denomination, and the casino's required payback percentage for your jurisdiction.</p>
-        <p>The "Hergids" plan is designed to manage your bankroll through phases: a low-risk "buffer building" stage (often using Free Play), followed by a high-aggression "jackpot pursuit" stage. By defining strict stop-loss and win-goals, we enforce the discipline required to maximize your chances of being in the right place at the right time for a high-payout cycle.</p>
-    </div>
-);
+const AlgorithmInsights: React.FC<{ sessionData: SessionData, onGenerate: () => Promise<string> }> = ({ sessionData, onGenerate }) => {
+    const [insight, setInsight] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleGenerate = async () => {
+        setIsLoading(true);
+        const result = await onGenerate();
+        setInsight(result);
+        setIsLoading(false);
+    };
+
+    return (
+         <div className="space-y-4 text-sm font-sans text-brand-subtle">
+            <Button onClick={handleGenerate} disabled={isLoading} className="w-full flex justify-center" variant="secondary">
+                {isLoading ? <Spinner /> : "Get Dynamic AI Insight"}
+            </Button>
+            {insight && <div className="p-4 bg-black/30 rounded-lg">{insight}</div>}
+            <p className="pt-4 border-t border-brand-subtle/20"><strong className="text-brand-text">Why this works (Analysis by Wilton John Picou, III):</strong> Our AI doesn't predict random numbers. It creates a strategy based on a machine's known volatility, denomination, and the casino's required payback percentage for your jurisdiction.</p>
+        </div>
+    );
+};
 
 
 const SessionView: React.FC<SessionViewProps> = ({ sessionData, setSessionData, onEndSession }) => {
     const [activeTab, setActiveTab] = useState<'tracker' | 'comps' | 'insights'>('tracker');
+    const [machineName, setMachineName] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
     
-    const { plan, spins, currentStageIndex, bankroll, freePlay } = sessionData;
+    const { plan, spins, currentStageIndex, bankroll, freePlay, goal } = sessionData;
+
+    // FIX: Define `currentStage` from the plan and current index to resolve reference errors.
     const currentStage = plan[currentStageIndex];
+
+    useEffect(() => {
+        // When the session starts, integrate the free play into the main bankroll
+        // to ensure net calculations are correct. This reflects the one-time
+        // use of promotional credits at the beginning of a session.
+        if (spins.length === 0 && freePlay > 0) {
+            setSessionData(prev => {
+                if (!prev) return null;
+                // Per user request to account for freePlay usage at session start.
+                // The freePlay amount is added to the bankroll to form a total credit pool.
+                // This ensures that bets made against free play are correctly accounted for
+                // in the totalNet calculation, which was the user's underlying goal.
+                const newBankroll = prev.bankroll + prev.freePlay;
+                return { 
+                    ...prev, 
+                    bankroll: newBankroll,
+                    freePlay: 0 // Mark free play as consumed
+                };
+            });
+        }
+    }, []); // Run only once when the session view mounts
 
     const totalNet = useMemo(() => spins.reduce((acc, spin) => acc + (spin.win - spin.bet), 0), [spins]);
     const currentBankroll = bankroll + totalNet;
     const totalCoinIn = useMemo(() => spins.reduce((acc, spin) => acc + spin.bet, 0), [spins]);
+    
+    const progressPercentage = Math.max(0, Math.min(100, (currentBankroll / goal) * 100));
 
     const handleSuccess = () => {
         alert("SUCCESS RECORDED! This session data, under the guidance of Wilton John Picou, III, will be used to refine the USBA core logic. Congratulations!");
@@ -139,39 +198,90 @@ const SessionView: React.FC<SessionViewProps> = ({ sessionData, setSessionData, 
         });
     };
     
+    const handleRefineStage = async () => {
+        if (!machineName) return;
+        setIsRefining(true);
+        try {
+            const refinedStage = await refineStageForMachine(currentStage, machineName, currentBankroll);
+            setSessionData(prev => {
+                if (!prev) return null;
+                const newPlan = [...prev.plan];
+                newPlan[prev.currentStageIndex] = refinedStage;
+                return { ...prev, plan: newPlan };
+            });
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "Failed to refine stage.");
+        }
+        setIsRefining(false);
+    };
+
+    const getDefaultBet = () => {
+        const betMatch = currentStage.betStrategy.match(/\$(\d+\.\d+)/);
+        return betMatch ? parseFloat(betMatch[1]) : 2.50;
+    };
+    
     const tabs = [
         { id: 'tracker', label: 'Session Tracker' },
         { id: 'comps', label: 'Comps Optimizer' },
-        { id: 'insights', label: 'AI Insights' },
+        { id: 'insights', label: 'Algorithm Insights' },
     ];
 
     return (
         <div className="animate-fade-in space-y-6">
             <Card>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center items-center">
                     <div>
                         <p className="text-sm font-sans text-brand-subtle uppercase">Initial Bankroll</p>
                         <p className="text-3xl font-mono font-bold text-brand-text">${bankroll.toFixed(2)}</p>
                     </div>
                      <div>
                         <p className="text-sm font-sans text-brand-subtle uppercase">Current Bankroll</p>
-                        <p className={`text-3xl font-mono font-bold ${currentBankroll >= bankroll ? 'text-brand-accent' : 'text-brand-secondary'}`}>
+                        <p className={`text-5xl font-mono font-black ${currentBankroll >= bankroll ? 'text-brand-accent' : 'text-brand-secondary'}`}>
                             ${currentBankroll.toFixed(2)}
                         </p>
                     </div>
                      <div>
-                        <p className="text-sm font-sans text-brand-subtle uppercase">Initial Free Play</p>
-                        <p className="text-3xl font-mono font-bold text-brand-primary">${freePlay.toFixed(2)}</p>
+                        <p className="text-sm font-sans text-brand-subtle uppercase">Target Goal</p>
+                        <p className="text-3xl font-mono font-bold text-brand-text">${goal.toFixed(2)}</p>
                     </div>
                 </div>
+                 <div className="w-full bg-black/30 rounded-full h-4 mt-4 border border-brand-subtle/50">
+                    <div className="bg-brand-primary h-full rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
+                </div>
+                <p className="text-center text-sm text-brand-primary font-mono mt-2">{progressPercentage.toFixed(1)}% to Goal</p>
             </Card>
 
             <Card title={`Current Mission: Stage ${currentStage.stage} of ${plan.length}`} className="border-brand-accent/50">
-                <div className="text-center space-y-2">
-                   <p className="text-2xl text-brand-accent font-bold">Find "{currentStage.gameName}"</p>
-                   <p className="text-lg text-brand-subtle font-sans">{currentStage.objective}</p>
-                   <div className="pt-2 flex justify-center items-center gap-4">
-                     <Button onClick={() => handleStageChange('prev')} disabled={currentStageIndex === 0} variant="secondary">Previous Stage</Button>
+                <div className="space-y-4">
+                   <div className="text-center">
+                     <p className="text-2xl text-brand-accent font-bold">Find "{currentStage.gameName}"</p>
+                     <p className="text-lg text-brand-subtle font-sans">{currentStage.objective}</p>
+                   </div>
+                   <div className="p-4 bg-black/50 rounded-lg">
+                        <p className="text-brand-subtle font-sans text-sm uppercase">Command</p>
+                        <p className={`font-sans text-lg ${currentStage.isRefined ? 'text-brand-accent animate-pulse' : 'text-brand-text'}`}>{currentStage.betStrategy}</p>
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                       <div className="bg-red-900/50 p-4 rounded text-center">
+                            <span className="text-red-300 block font-sans uppercase">Stop-Loss At</span>
+                            <span className="text-red-200 font-bold text-2xl">${currentStage.stopLoss.toFixed(2)}</span>
+                       </div>
+                       <div className="bg-green-900/50 p-4 rounded text-center">
+                            <span className="text-green-300 block font-sans uppercase">Advance At</span>
+                            <span className="text-green-200 font-bold text-2xl">${currentStage.winGoal.toFixed(2)}</span>
+                       </div>
+                   </div>
+                   <div className="pt-4 border-t border-brand-subtle/30">
+                       <h4 className="text-brand-secondary font-bold text-center font-sans mb-2">Machine Check-in (Optional)</h4>
+                       <div className="flex gap-2">
+                           <Input label="Enter exact machine name if different" id="machineName" value={machineName} onChange={e => setMachineName(e.target.value)} placeholder="e.g., Dragon Link Golden Century" />
+                           <Button onClick={handleRefineStage} disabled={isRefining || !machineName} className="self-end flex-shrink-0">
+                               {isRefining ? <Spinner/> : "Refine"}
+                            </Button>
+                       </div>
+                   </div>
+                   <div className="pt-4 flex justify-center items-center gap-4">
+                     <Button onClick={() => handleStageChange('prev')} disabled={currentStageIndex === 0} variant="secondary">Prev Stage</Button>
                      <Button onClick={() => handleStageChange('next')} disabled={currentStageIndex === plan.length - 1} variant="secondary">Next Stage</Button>
                    </div>
                 </div>
@@ -190,9 +300,9 @@ const SessionView: React.FC<SessionViewProps> = ({ sessionData, setSessionData, 
                     ))}
                 </div>
                 <div>
-                    {activeTab === 'tracker' && <SessionTracker spins={spins} onLogSpin={handleLogSpin} />}
+                    {activeTab === 'tracker' && <SessionTracker spins={spins} onLogSpin={handleLogSpin} defaultBet={getDefaultBet()} />}
                     {activeTab === 'comps' && <CompsOptimizer coinIn={totalCoinIn} />}
-                    {activeTab === 'insights' && <AlgorithmInsights />}
+                    {activeTab === 'insights' && <AlgorithmInsights sessionData={sessionData} onGenerate={() => generateDynamicInsight(sessionData)} />}
                 </div>
             </Card>
             
